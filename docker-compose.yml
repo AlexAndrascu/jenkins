@@ -1,14 +1,19 @@
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /var/snap:/var/snap
+      - /snap:/snap
     environment:
       JENKINS_OPTS: --httpPort=8080
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+    privileged: true
     depends_on:
       - dind
 
