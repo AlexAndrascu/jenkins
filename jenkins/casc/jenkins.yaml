@@ -10,6 +10,12 @@ jenkins:
         - id: ${JENKINS_ADMIN_USER}
           password: ${JENKINS_ADMIN_PASSWORD}
   
+  authorizationStrategy:
+    projectMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Read:authenticated"
+  
   clouds:
     - docker:
         name: "docker-cloud"
@@ -23,6 +29,9 @@ jenkins:
               image: "jenkins/agent:latest"
               environmentsString: |
                 DOCKER_HOST=tcp://dind:2375
+              mounts:
+                - "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock"
+              privileged: true
             connector:
               attach:
                 user: "jenkins"
@@ -33,6 +42,7 @@ jobs:
       pipelineJob('k8s-deployment') {
         definition {
           cps {
+            sandbox(true)
             script('''
               pipeline {
                 agent {
@@ -44,7 +54,36 @@ jobs:
                 stages {
                   stage('Setup Environment') {
                     steps {
-                      sh 'docker version'
+                      sh """
+                        set -x
+                        apt-get update
+                        apt-get install -y wget curl
+                        wget https://get.docker.com -O get-docker.sh
+                        chmod +x get-docker.sh
+                        ./get-docker.sh
+                        docker version
+                      """
+                    }
+                  }
+                  stage('Install k3s') {
+                    steps {
+                      sh """
+                        set -x
+                        curl -sfL https://get.k3s.io | sh -
+                        sleep 30
+                        k3s kubectl get nodes
+                      """
+                    }
+                  }
+                  stage('Deploy Sample App') {
+                    steps {
+                      sh """
+                        set -x
+                        k3s kubectl create deployment hello-node --image=k8s.gcr.io/echoserver:1.4
+                        k3s kubectl expose deployment hello-node --type=NodePort --port=8080
+                        sleep 30
+                        k3s kubectl get svc hello-node
+                      """
                     }
                   }
                 }

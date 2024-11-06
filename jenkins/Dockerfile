@@ -17,13 +17,15 @@ RUN curl -sfL https://get.k3s.io > /usr/local/bin/k3s && \
 RUN mkdir -p /etc/rancher/k3s && \
     mkdir -p /var/lib/rancher/k3s && \
     mkdir -p /var/log/k3s && \
-    mkdir -p /home/jenkins/.kube
+    mkdir -p /home/jenkins/.kube && \
+    mkdir -p /var/jenkins_home/jobs
 
 # Configure permissions
 RUN chown -R jenkins:jenkins /etc/rancher/k3s && \
     chown -R jenkins:jenkins /var/lib/rancher/k3s && \
     chown -R jenkins:jenkins /var/log/k3s && \
-    chown -R jenkins:jenkins /home/jenkins/.kube
+    chown -R jenkins:jenkins /home/jenkins/.kube && \
+    chown -R jenkins:jenkins /var/jenkins_home/jobs
 
 USER jenkins
 
@@ -36,4 +38,5 @@ RUN jenkins-plugin-cli --plugins \
     docker-plugin \
     docker-slaves \
     kubernetes \
-    kubernetes-credentials
+    kubernetes-credentials \
+    matrix-auth
