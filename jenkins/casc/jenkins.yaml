@@ -1,0 +1,55 @@
+jenkins:
+  systemMessage: "Jenkins configured using Configuration as Code"
+  numExecutors: 2
+  mode: NORMAL
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: ${JENKINS_ADMIN_USER}
+          password: ${JENKINS_ADMIN_PASSWORD}
+  
+  clouds:
+    - docker:
+        name: "docker-cloud"
+        dockerApi:
+          dockerHost:
+            uri: "tcp://dind:2375"
+            credentialsId: "none"
+        templates:
+          - labelString: "docker-agent"
+            dockerTemplateBase:
+              image: "jenkins/agent:latest"
+              environmentsString: |
+                DOCKER_HOST=tcp://dind:2375
+            connector:
+              attach:
+                user: "jenkins"
+            instanceCapStr: "10"
+
+jobs:
+  - script: |
+      pipelineJob('k8s-deployment') {
+        definition {
+          cps {
+            script('''
+              pipeline {
+                agent {
+                  label 'docker-agent'
+                }
+                environment {
+                  KUBECONFIG = '/var/jenkins_home/.kube/config'
+                }
+                stages {
+                  stage('Setup Environment') {
+                    steps {
+                      sh 'docker version'
+                    }
+                  }
+                }
+              }
+            ''')
+          }
+        }
+      }
