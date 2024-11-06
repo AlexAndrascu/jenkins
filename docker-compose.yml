@@ -8,18 +8,24 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - ./jenkins/casc:/var/jenkins_home/casc:ro
       - /var/snap:/var/snap
       - /snap:/snap
     environment:
       JENKINS_OPTS: --httpPort=8080
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      CASC_JENKINS_CONFIG: /var/jenkins_home/casc/jenkins.yaml
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD}
     privileged: true
     depends_on:
       - dind
 
   dind:
-    image: docker:latest
+    image: docker:dind
     privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
     volumes:
       - /var/lib/docker
 
