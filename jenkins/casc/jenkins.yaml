@@ -48,7 +48,7 @@ jobs:
                   label 'docker-agent'
                 }
                 environment {
-                  KUBECONFIG = '/var/jenkins_home/.kube/config'
+                  KUBECONFIG = '/etc/rancher/k3s/k3s.yaml'
                   DOCKER_HOST = 'tcp://host.docker.internal:2375'
                 }
                 stages {
@@ -69,9 +69,19 @@ jobs:
                         curl -sfL https://github.com/k3s-io/k3s/releases/latest/download/k3s -o /usr/local/bin/k3s
                         chmod +x /usr/local/bin/k3s
                         # Start k3s server without systemd or openrc
-                        k3s server --disable-agent &
-                        sleep 30
-                        k3s kubectl get nodes
+                        nohup k3s server --disable-agent &>/var/log/k3s.log &
+                        # Wait until k3s server is ready
+                        for i in {1..10}; do
+                          if k3s kubectl get nodes; then
+                            echo "k3s server is ready."
+                            break
+                          else
+                            echo "Waiting for k3s server to be ready..."
+                            sleep 10
+                          fi
+                        done
+                        # Display k3s server logs
+                        cat /var/log/k3s.log
                       """
                     }
                   }
