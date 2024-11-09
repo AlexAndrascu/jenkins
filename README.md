@@ -66,8 +66,8 @@ This project sets up a **Jenkins CI/CD environment** using **Docker** and **Dock
      - Open **Docker Desktop** settings.
      - Navigate to **Settings** > **General**.
      - Check **"Expose daemon on tcp://localhost:2375 without TLS"**.
-     - ⚠️ Make sure you understand the security implication of this ⚠️
-       ( i.e. This is not a production ready deployment. Use for local / demo purposes only )
+     - ⚠️ Make sure you understand the security implication of this ⚠️ \
+     ( i.e. This is not a production ready deployment. Use for local / demo purposes only )
 
 4. **Build and Start the Docker Containers**
 
