@@ -159,8 +159,6 @@ Defines two main services:
 ### 1. Jenkins Service
 
 - **Build Context**: Uses the custom Dockerfile from jenkins
-
-.
 - **Ports**:
   - `8080`: Jenkins web interface.
   - `50000`: Jenkins agent communication.
