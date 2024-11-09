@@ -21,21 +21,20 @@ jenkins:
         name: "docker-cloud"
         dockerApi:
           dockerHost:
-            uri: "tcp://dind:2375"
+            uri: "tcp://host.docker.internal:2375"
             credentialsId: "none"
         templates:
           - labelString: "docker-agent"
             dockerTemplateBase:
-              image: "jenkins/agent:latest"
+              image: "jenkins/inbound-agent:latest"
               environmentsString: |
-                DOCKER_HOST=tcp://dind:2375
-              mounts:
-                - "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock"
+                DOCKER_HOST=tcp://host.docker.internal:2375
               privileged: true
             connector:
               attach:
-                user: "jenkins"
+                user: "root"
             instanceCapStr: "10"
+
 
 jobs:
   - script: |
@@ -50,6 +49,7 @@ jobs:
                 }
                 environment {
                   KUBECONFIG = '/var/jenkins_home/.kube/config'
+                  DOCKER_HOST = 'tcp://host.docker.internal:2375'
                 }
                 stages {
                   stage('Setup Environment') {
@@ -58,10 +58,6 @@ jobs:
                         set -x
                         apt-get update
                         apt-get install -y wget curl
-                        wget https://get.docker.com -O get-docker.sh
-                        chmod +x get-docker.sh
-                        ./get-docker.sh
-                        docker version
                       """
                     }
                   }
@@ -69,7 +65,11 @@ jobs:
                     steps {
                       sh """
                         set -x
-                        curl -sfL https://get.k3s.io | sh -
+                        # Download k3s binary directly
+                        curl -sfL https://github.com/k3s-io/k3s/releases/latest/download/k3s -o /usr/local/bin/k3s
+                        chmod +x /usr/local/bin/k3s
+                        # Start k3s server without systemd or openrc
+                        k3s server --disable-agent &
                         sleep 30
                         k3s kubectl get nodes
                       """
@@ -80,6 +80,13 @@ jobs:
                       sh """
                         set -x
                         k3s kubectl create deployment hello-node --image=k8s.gcr.io/echoserver:1.4
+                      """
+                    }
+                  }
+                  stage('Expose Sample App') {
+                    steps {
+                      sh """
+                        set -x
                         k3s kubectl expose deployment hello-node --type=NodePort --port=8080
                         sleep 30
                         k3s kubectl get svc hello-node
